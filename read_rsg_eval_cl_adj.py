@@ -110,8 +110,8 @@ def get_cam_poses_txt(ground_truth_cam_poses_fpath):
 
 
 if __name__ == '__main__':
-    ground_truth_cam_poses_fpath = './testdata/_rsg_combined/custom_CPOSs.txt'
-    rsg_path = './testdata/RSG_manual_2D_proj/RSG'
+    ground_truth_cam_poses_fpath = './testdata/_rsg_combined_COCODF-tools_output/custom_CPOSs.txt'
+    rsg_path = './testdata/RSG_perfect_2D_marker_proj/RSG'
     cl_path = ''
 
     try:
@@ -125,5 +125,3 @@ if __name__ == '__main__':
 
     ground_truth_cam_poses = get_cam_poses_txt(ground_truth_cam_poses_fpath)
     adjusted_cam_poses = get_cam_poses_rsg(rsg_path)
-
-    calc_accuracy(rsg_path, ground_truth_cam_poses_fpath)
