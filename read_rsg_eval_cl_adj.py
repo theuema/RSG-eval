@@ -142,7 +142,7 @@ def get_uv_coordinates_cl(cl_path):
         print('Error: No cl-files found in directory (%s)' % cl_path)
         sys.exit(1)
 
-    cl_img_id_coordinates = {}
+    cl_img_id_coordinates = []
     for i, cl_fpath in enumerate(cl_fpaths):
         f = open(cl_fpath, 'r')
         cl_coordinates = []
@@ -160,7 +160,7 @@ def get_uv_coordinates_cl(cl_path):
             cl_coordinates.append(coordinates)
         
         # append usuing img ID of sorted cl_fpaths
-        cl_img_id_coordinates[i+1] = cl_coordinates
+        cl_img_id_coordinates.append(cl_coordinates)
     
     return cl_img_id_coordinates
 
@@ -169,16 +169,40 @@ def eval_cam_poses_mean(ground_truth_cam_poses: list, adjusted_cam_poses: list):
     # {} = cam_poses[img_id - 1] 
     # {'ID': 1, 'X': -1.2461, 'Y': 0.3497, 'Z': 1.2641, 'OMEGA': -91.9631, 'PHI': -3.2676, 'KAPPA': 306.7033} 
     
-    return 0
+    return
 
-def eval_cv_centers_mean(uv_set_one: list, uv_set_two: list, set_one_name: str, set_two_name: str):
+def eval_cv_centers_mean(uv_set_one: list, uv_set_two: list, uv_set_one_name: str, uv_set_two_name: str):
     # param 'set'
     # [{},{},{}, ... {}] = uv_set_one[img_id - 1]
     # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, ... ]
 
     
-    return 0
+    
+    return
 
+def find_missing_perf_cv_centers(perf_uv_coordinates: list, det_uv_coordinates: list):
+    # param 'uv_coordinates'
+    # [{},{},{}, ... {}] = uv_set_one[img_id - 1]
+    # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, ... ]
+
+    for i, det_coordinates_img_id in enumerate(det_uv_coordinates):
+        perf_coordinates_img_id = perf_uv_coordinates[i]
+        for det_coord in det_coordinates_img_id:
+            found_cat_id = False
+
+            for perf_coord in perf_coordinates_img_id:
+                #print(det_coord['CAT_ID'])
+                val = perf_coord.values()
+                if det_coord['CAT_ID'] in perf_coord.values():
+                    found_cat_id = True
+
+            if found_cat_id is True:
+                continue
+            else:
+                print('category ID (' + str(det_coord['CAT_ID']) + ') missing for image ID (%i)' % (i+1))
+
+
+    return 
 
 if __name__ == '__main__':
     ground_truth_cam_poses_fpath = './testdata/_rsg_combined_COCODF-tools_output/CPOSs.txt'
@@ -187,7 +211,7 @@ if __name__ == '__main__':
     perf_cl_path = './testdata/RSG_perfect_2D_marker_proj/POINT_DATA/CL'
     # adjustment detection 2D centers paths
     # TODO: det_rsg_par_path = './testdata/RSG_detection_2D_centers/RSG'
-    det_cl_path = './testdata/_rsg_combined_COCODF-tools_output/cl_det_multirec'
+    det_cl_path = './testdata/_rsg_combined_COCODF-tools_output/cl_det_multrec'
 
     try:
         if not os.path.isfile(ground_truth_cam_poses_fpath):
@@ -213,4 +237,5 @@ if __name__ == '__main__':
     eval_cam_poses_mean(ground_truth_cam_poses, perf_uv_adjusted_cam_poses) 
     eval_cv_centers_mean(perf_uv_coordinates, det_uv_coordinates, \
         uv_set_one_name='Perfect marker projection image coordinates', uv_set_two_name='Object detection center image coordinates')
+    find_missing_perf_cv_centers(perf_uv_coordinates, det_uv_coordinates)
     print('gooood.')
