@@ -81,6 +81,7 @@ def get_cam_poses_rsg(rsg_path):
         for attributes in root.findall('Attributes'): # iterate over all the nodes with tag name 'Attributes'
             if attributes.get('Set') == 'AdjustedGeometry': # extract the attribute 'Set' of 'Attributes'-Tag; compare with desired Set name 'AdjustedGeometry'
                 adjusted_cam_pose = {}
+                # include img_id to dict
                 img_id = int(str(Path(par_fpath).stem).split('_')[-1])
                 adjusted_cam_pose['ID'] = img_id 
                 for tag in attributes.findall('Tag'): # iterate over all the nodes with tag name 'Tag'
@@ -164,12 +165,9 @@ def get_uv_coordinates_cl(cl_path):
     return cl_img_id_coordinates
 
 def eval_cam_poses_mean(ground_truth_cam_poses: list, adjusted_cam_poses: list):
-    # param 'ground truth cam poses'
-    # {} = ground_truth_cam_poses[img_id - 1] 
+    # param 'cam poses'
+    # {} = cam_poses[img_id - 1] 
     # {'ID': 1, 'X': -1.2461, 'Y': 0.3497, 'Z': 1.2641, 'OMEGA': -91.9631, 'PHI': -3.2676, 'KAPPA': 306.7033} 
-
-    # param 'adjusted_cam_poses' 
-    # # {} = ground_truth_cam_poses[img_id - 1]  
     
     return 0
 
