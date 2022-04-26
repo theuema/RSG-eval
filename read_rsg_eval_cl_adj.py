@@ -4,6 +4,7 @@ import os
 from glob import glob
 import math as m
 import sys
+from pathlib import Path
 
 def GetOPK(RMat):
     phi = m.asin(RMat[2][0])
@@ -38,36 +39,50 @@ def get_par_paths(dir):
     # return a list of all image paths in a given directory
     return sorted(glob(os.path.join(dir, '*.PAR')))
 
+def get_cl_paths(dir):
+    # return a list of all image paths in a given directory
+    return sorted(glob(os.path.join(dir, '*.cl')))
+
 def calc_pixel_dist(p1, p2):
     return p1-p2
 
 def calc_mean_pixel_dist(distances, N):
     return distances / N
 
-def calc_per_single_image_example():
+def eval_per_single_image_example(ground_truth_cam_pose, adjusted_cam_pose):
     return 0
 
-def calc_per_multiple_image_examples():
+def eval_per_multiple_image_examples_mean(img_ids, ground_truth_cam_poses, adjusted_cam_poses):
+    return 0
+
+def eval_all_examples_mean(ground_truth_cam_poses, adjusted_cam_poses):
     return 0
 
 def get_cam_poses_rsg(rsg_path):
+    # returns a list of dicts containing camera poses from par files in /RSG folder
+    # where the index is the img_id - 1
+    # {'X': -1.2386, 'Y': 0.3558, 'Z': 1.2618, 'OMEGA': -92.589, 'PHI': -2.9511, 'KAPPA': 306.9729}
+
     # get adjusted poses from XML
-    all_par_paths = get_par_paths(rsg_path)
-    if not len(all_par_paths):
+    par_fpaths = get_par_paths(rsg_path)
+    if not len(par_fpaths):
         print('Error: No par-files found in directory (%s)' % rsg_path)
         sys.exit(1)
 
     adjusted_cam_poses = []
-    for par_path in all_par_paths:
-        root = ET.parse(par_path).getroot()
+    for par_fpath in par_fpaths:
+        root = ET.parse(par_fpath).getroot()
         # --- some examples
         # print(root.tag) outputs 'PhysicalEntity'
         # get all attributes of PhysicalEntity:
         #   print(root.attrib) outputs '{relpath="." prefix="unknown" size="0" type="RSGimagemodel" version="3.1" state="----------"}'
 
+        
         for attributes in root.findall('Attributes'): # iterate over all the nodes with tag name 'Attributes'
             if attributes.get('Set') == 'AdjustedGeometry': # extract the attribute 'Set' of 'Attributes'-Tag; compare with desired Set name 'AdjustedGeometry'
                 adjusted_cam_pose = {}
+                img_id = int(str(Path(par_fpath).stem).split('_')[-1])
+                adjusted_cam_pose['ID'] = img_id 
                 for tag in attributes.findall('Tag'): # iterate over all the nodes with tag name 'Tag'
                     if tag.get('id') == 'ORBX': adjusted_cam_pose['X'] = round(float(tag.text), 4) # get text of 'Tag' with desired 'id'
                     if tag.get('id') == 'ORBY': adjusted_cam_pose['Y'] = round(float(tag.text), 4)
@@ -79,7 +94,12 @@ def get_cam_poses_rsg(rsg_path):
 
     return adjusted_cam_poses
 
-def get_cam_poses_txt(ground_truth_cam_poses_fpath):
+def get_cam_poses(ground_truth_cam_poses_fpath):
+    # returns a list of dicts containing camera
+    #  poses from a file
+    # where the index is the img_id - 1
+    # {'ID': 1, 'X': -1.2461, 'Y': 0.3497, 'Z': 1.2641, 'OMEGA': -91.9631, 'PHI': -3.2676, 'KAPPA': 306.7033}
+
     # Get ground truth camera poses
     f = open(ground_truth_cam_poses_fpath, 'r')
     ground_truth_cam_poses = []
@@ -106,22 +126,93 @@ def get_cam_poses_txt(ground_truth_cam_poses_fpath):
         ground_truth_cam_pose['KAPPA'] = round(kappa, 4)
         ground_truth_cam_poses.append(ground_truth_cam_pose)
 
-    return sorted(ground_truth_cam_poses, key=lambda d: d['ID'])
+    return ground_truth_cam_poses # sorted(ground_truth_cam_poses, key=lambda d: d['ID'])
+
+def get_uv_coordinates_cl(cl_path):
+    # returns a list of lists containing the uv coordinates of an image id
+    # where the index is the img_id - 1
+    # [{},{},{}, ... {}] = returnlist[img_id - 1]
+    # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, {'CAT_ID': 19, 'U': 1028.49, 'V': 927.74}, {'CAT_ID': 20, 'U': 1739.0, 'V': 973.43}, {'CAT_ID': 21, 'U': 2030.97, 'V': 937.98}, {'CAT_ID': 22, 'U': 1255.0, 'V': 137.54}]
+
+    # get cl filepath
+    # s
+    cl_fpaths = get_cl_paths(cl_path)
+    if not len(cl_fpaths):
+        print('Error: No cl-files found in directory (%s)' % cl_path)
+        sys.exit(1)
+
+    cl_img_id_coordinates = {}
+    for i, cl_fpath in enumerate(cl_fpaths):
+        f = open(cl_fpath, 'r')
+        cl_coordinates = []
+        for line in f.readlines()[1:]:
+            l = line.rstrip().split(';')
+            # continue at manually defined 'GCP' points
+            if 'GCP' in l[0]:
+                continue
+
+            coordinates = {}
+
+            coordinates['CAT_ID'] = int(l[0])
+            coordinates['U'] = round(float(l[1]), 2)
+            coordinates['V'] = round(float(l[2]), 2)
+            cl_coordinates.append(coordinates)
+        
+        # append usuing img ID of sorted cl_fpaths
+        cl_img_id_coordinates[i+1] = cl_coordinates
+    
+    return cl_img_id_coordinates
+
+def eval_cam_poses_mean(ground_truth_cam_poses: list, adjusted_cam_poses: list):
+    # param 'ground truth cam poses'
+    # {} = ground_truth_cam_poses[img_id - 1] 
+    # {'ID': 1, 'X': -1.2461, 'Y': 0.3497, 'Z': 1.2641, 'OMEGA': -91.9631, 'PHI': -3.2676, 'KAPPA': 306.7033} 
+
+    # param 'adjusted_cam_poses' 
+    # # {} = ground_truth_cam_poses[img_id - 1]  
+    
+    return 0
+
+def eval_cv_centers_mean(uv_set_one: list, uv_set_two: list, set_one_name: str, set_two_name: str):
+    # param 'set'
+    # [{},{},{}, ... {}] = uv_set_one[img_id - 1]
+    # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, ... ]
+
+    
+    return 0
 
 
 if __name__ == '__main__':
-    ground_truth_cam_poses_fpath = './testdata/_rsg_combined_COCODF-tools_output/custom_CPOSs.txt'
-    rsg_path = './testdata/RSG_perfect_2D_marker_proj/RSG'
-    cl_path = ''
+    ground_truth_cam_poses_fpath = './testdata/_rsg_combined_COCODF-tools_output/CPOSs.txt'
+    # adjustment perfect marker projection paths
+    perf_rsg_par_path = './testdata/RSG_perfect_2D_marker_proj/RSG' # Filenames must be split with '_' and have the number at last: e.g., IMG001_IMG_001.PAR
+    perf_cl_path = './testdata/RSG_perfect_2D_marker_proj/POINT_DATA/CL'
+    # adjustment detection 2D centers paths
+    # TODO: det_rsg_par_path = './testdata/RSG_detection_2D_centers/RSG'
+    det_cl_path = './testdata/_rsg_combined_COCODF-tools_output/cl_det_multirec'
 
     try:
         if not os.path.isfile(ground_truth_cam_poses_fpath):
             raise FileExistsError('Cam pose file does not exist.')
-        if not os.path.isdir(rsg_path):
-            raise ValueError('Directory for RSG does not exist.')
+        if not os.path.isdir(perf_rsg_par_path) \
+            or not os.path.isdir(perf_cl_path) \
+                or not os.path.isdir(det_cl_path): # TODO: or not os.path.isdir(det_rsg_par_path)
+            raise ValueError('Some directory for evaluation does not exist.')
     except Exception as e:
                 print('Exception: {}'.format(str(e)), file=sys.stderr)
                 sys.exit(1)
 
-    ground_truth_cam_poses = get_cam_poses_txt(ground_truth_cam_poses_fpath)
-    adjusted_cam_poses = get_cam_poses_rsg(rsg_path)
+    # get adjustment data
+    ground_truth_cam_poses = get_cam_poses(ground_truth_cam_poses_fpath)
+    # perfect marker projection adjustment
+    perf_uv_adjusted_cam_poses = get_cam_poses_rsg(perf_rsg_par_path)
+    perf_uv_coordinates = get_uv_coordinates_cl(perf_cl_path)
+    # detection centers adjustment
+    # TODO: det_uv_adjusted_cam_poses = get_cam_poses_rsg(det_rsg_par_path)
+    det_uv_coordinates = get_uv_coordinates_cl(det_cl_path)
+
+    # eval
+    eval_cam_poses_mean(ground_truth_cam_poses, perf_uv_adjusted_cam_poses) 
+    eval_cv_centers_mean(perf_uv_coordinates, det_uv_coordinates, \
+        uv_set_one_name='Perfect marker projection image coordinates', uv_set_two_name='Object detection center image coordinates')
+    print('gooood.')
