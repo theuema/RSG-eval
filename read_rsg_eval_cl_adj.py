@@ -44,10 +44,10 @@ def get_cl_paths(dir):
     return sorted(glob(os.path.join(dir, '*.cl')))
 
 def calc_pixel_dist(p1, p2):
-    return p1-p2
+    return abs(p1-p2)
 
-def calc_mean_pixel_dist(distances, N):
-    return distances / N
+def calc_mean_pixel_dist(summed_distances, N):
+    return summed_distances / N
 
 def eval_per_single_image_example(ground_truth_cam_pose, adjusted_cam_pose):
     return 0
@@ -171,28 +171,79 @@ def eval_cam_poses_mean(ground_truth_cam_poses: list, adjusted_cam_poses: list):
     
     return
 
-def eval_cv_centers_mean(uv_set_one: list, uv_set_two: list, uv_set_one_name: str, uv_set_two_name: str):
+def calc_cl_centers_pixel_dist_mean(uv_set_one: list, uv_set_two: list, img_ids: list = None):
     # param 'set'
     # [{},{},{}, ... {}] = uv_set_one[img_id - 1]
-    # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, ... ]
+    # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, ... ] 
+    # U, V = float; CAT_ID = int
 
-    
-    
-    return
+    # the number of center coordinates must be equal
+    for i, img_id_coordinates_set_one in enumerate(uv_set_one):
+        img_id_coordinates_set_two = uv_set_two[i] 
+        if not len(img_id_coordinates_set_one) == len(img_id_coordinates_set_two):
+                print('Error: cl centers not aligned for image id (' + str(i+1) + '). \
+                    Got sets with different length (%s, %s)' % (len(img_id_coordinates_set_one), len(img_id_coordinates_set_two)))
+                sys.exit(1) 
 
-def find_missing_perf_cv_centers(perf_uv_coordinates: list, det_uv_coordinates: list):
+    # if no image_ids given, calculate for all image examples
+    if img_ids is None:
+        img_ids = [i+1 for i, j in enumerate(uv_set_one)]
+    
+    u_pxl_distance = 0
+    v_pxl_distance = 0
+    N = 0
+    for img_id in img_ids:
+        img_id_coordinates_set_one = uv_set_one[img_id-1]
+        img_id_coordinates_set_two = uv_set_two[img_id-1]
+        N += len(img_id_coordinates_set_one)
+        
+        for i, img_id_coordinate_set_one in enumerate(img_id_coordinates_set_one):
+            img_id_coordinate_set_two = img_id_coordinates_set_two[i]
+            cat_id_one = img_id_coordinate_set_one['CAT_ID']
+            cat_id_two = img_id_coordinate_set_two['CAT_ID']
+
+            if cat_id_one == cat_id_two:
+                u_pxl_distance += calc_pixel_dist(img_id_coordinate_set_one['U'], img_id_coordinate_set_two['U'])
+                v_pxl_distance += calc_pixel_dist(img_id_coordinate_set_one['V'], img_id_coordinate_set_two['V'])
+            else:
+                print('Error: Category ID does not match. Not calculating the pixel distance (CAT_ID %s vs. %s)' % (cat_id_one, cat_id_two))
+                sys.exit(1)  
+            
+
+    return  {'U_PXL_DIST_MEAN': round(u_pxl_distance, 2), 'V_PXL_DIST_MEAN': round(v_pxl_distance, 2), 'IMG_IDS': img_ids}
+
+def centers_pxl_dist_mean_per_img_id(uv_set_one, uv_set_two):
+
+    # the number of center coordinates must be equal
+    for i, img_id_coordinates_set_one in enumerate(uv_set_one):
+        img_id_coordinates_set_two = uv_set_two[i] 
+        if not len(img_id_coordinates_set_one) == len(img_id_coordinates_set_two):
+                print('Error: cl centers not aligned for image id (' + str(i+1) + '). \
+                    Got sets with different length (%s, %s)' % (len(img_id_coordinates_set_one), len(img_id_coordinates_set_two)))
+                sys.exit(1) 
+
+    centers_pxl_dist_mean_per_img_id = []
+
+    for i, _ in enumerate(uv_set_one):
+        img_id = i+1
+        pxl_mean_img_id = calc_cl_centers_pixel_dist_mean(aligned_gruth_uv_coordinates, det_uv_coordinates, [img_id])
+        centers_pxl_dist_mean_per_img_id.append(pxl_mean_img_id)
+    
+    return centers_pxl_dist_mean_per_img_id
+
+def find_missing_gtruth_cv_centers(gruth_uv_coordinates: list, det_uv_coordinates: list):
     # param 'uv_coordinates'
     # [{},{},{}, ... {}] = uv_set_one[img_id - 1]
     # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, ... ]
 
     for i, det_coordinates_img_id in enumerate(det_uv_coordinates):
-        perf_coordinates_img_id = perf_uv_coordinates[i]
+        img_id_gtruth_coordinates = gruth_uv_coordinates[i]
         for det_coord in det_coordinates_img_id:
             found_cat_id = False
 
-            for perf_coord in perf_coordinates_img_id:
+            for gtruth_coord in img_id_gtruth_coordinates:
                 #print(det_coord['CAT_ID'])
-                if det_coord['CAT_ID'] in perf_coord.values():
+                if det_coord['CAT_ID'] in gtruth_coord.values():
                     found_cat_id = True
 
             if found_cat_id is True:
@@ -202,22 +253,23 @@ def find_missing_perf_cv_centers(perf_uv_coordinates: list, det_uv_coordinates: 
     print('No missing cl centers in manually projected gtruth centers found (every category ID detected is found in gtruth data).')
     return
 
-def align_gtruth_to_det_projections(perf_uv_coordinates: list, det_uv_coordinates: list):
+def align_gtruth_to_det_projections(gruth_uv_coordinates: list, det_uv_coordinates: list):
     # param 'uv_coordinates'
     # [{},{},{}, ... {}] = uv_set_one[img_id - 1]
     # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, ... ]
 
-    aligned_perf_uv_coordinates = []
+    aligned_gruth_uv_coordinates = []
     for i, det_coordinates_img_id in enumerate(det_uv_coordinates):
-        perf_coordinates_img_id = perf_uv_coordinates[i]
-        img_id_aligned_perf_uv_coordinates = []
+        img_id_gtruth_coordinates = gruth_uv_coordinates[i]
+        img_id_aligned_gruth_uv_coordinates = []
+
         for det_coord in det_coordinates_img_id:
             found_cat_id = False
 
-            for perf_coord in perf_coordinates_img_id:
+            for gtruth_coord in img_id_gtruth_coordinates:
                 #print(det_coord['CAT_ID'])
-                if det_coord['CAT_ID'] in perf_coord.values():
-                    img_id_aligned_perf_uv_coordinates.append(perf_coord)
+                if det_coord['CAT_ID'] in gtruth_coord.values():
+                    img_id_aligned_gruth_uv_coordinates.append(gtruth_coord)
                     found_cat_id = True
 
             if found_cat_id is True:
@@ -227,15 +279,15 @@ def align_gtruth_to_det_projections(perf_uv_coordinates: list, det_uv_coordinate
                         in ground truth image data (img_id %s)' % (i+1))
                 sys.exit(1)
         # append found category ID's to aligend gtruth data
-        aligned_perf_uv_coordinates.append(img_id_aligned_perf_uv_coordinates)
+        aligned_gruth_uv_coordinates.append(img_id_aligned_gruth_uv_coordinates)
 
-    return aligned_perf_uv_coordinates
+    return aligned_gruth_uv_coordinates
 
 if __name__ == '__main__':
     ground_truth_cam_poses_fpath = './testdata/_rsg_combined_COCODF-tools_output/CPOSs.txt'
     # adjustment perfect marker projection paths
-    perf_rsg_par_path = './testdata/RSG_manual_gtruth_2D_marker_proj/RSG' # Filenames must be split with '_' and have the number at last: e.g., IMG001_IMG_001.PAR
-    perf_cl_path = './testdata/RSG_manual_gtruth_2D_marker_proj/POINT_DATA/CL'
+    gtruth_rsg_par_path = './testdata/RSG_manual_gtruth_2D_marker_proj/RSG' # Filenames must be split with '_' and have the number at last: e.g., IMG001_IMG_001.PAR
+    gruth_cl_path = './testdata/RSG_manual_gtruth_2D_marker_proj/POINT_DATA/CL'
     # adjustment detection 2D centers paths
     # TODO: det_rsg_par_path = './testdata/RSG_detection_2D_centers/RSG'
     det_cl_path = './testdata/_rsg_combined_COCODF-tools_output/cl_det_multrec'
@@ -243,8 +295,8 @@ if __name__ == '__main__':
     try:
         if not os.path.isfile(ground_truth_cam_poses_fpath):
             raise FileExistsError('Cam pose file does not exist.')
-        if not os.path.isdir(perf_rsg_par_path) \
-            or not os.path.isdir(perf_cl_path) \
+        if not os.path.isdir(gtruth_rsg_par_path) \
+            or not os.path.isdir(gruth_cl_path) \
                 or not os.path.isdir(det_cl_path): # TODO: or not os.path.isdir(det_rsg_par_path)
             raise ValueError('Some directory for evaluation does not exist.')
     except Exception as e:
@@ -253,23 +305,23 @@ if __name__ == '__main__':
 
     # get adjustment data
     ground_truth_cam_poses = get_cam_poses(ground_truth_cam_poses_fpath)
-    # perfect marker projection adjustment
-    perf_uv_adjusted_cam_poses = get_cam_poses_rsg(perf_rsg_par_path)
-    perf_uv_coordinates = get_uv_coordinates_cl(perf_cl_path)
+    # gtruth marker projection adjustment
+    gtruth_uv_adjusted_cam_poses = get_cam_poses_rsg(gtruth_rsg_par_path)
+    gruth_uv_coordinates = get_uv_coordinates_cl(gruth_cl_path)
     # detection centers adjustment
     # TODO: det_uv_adjusted_cam_poses = get_cam_poses_rsg(det_rsg_par_path)
     det_uv_coordinates = get_uv_coordinates_cl(det_cl_path)
 
     
     # align
-    find_missing_perf_cv_centers(perf_uv_coordinates, det_uv_coordinates)
-    aligned_perf_uv_coordinates = align_gtruth_to_det_projections(perf_uv_coordinates, det_uv_coordinates)
+    find_missing_gtruth_cv_centers(gruth_uv_coordinates, det_uv_coordinates)
+    aligned_gruth_uv_coordinates = align_gtruth_to_det_projections(gruth_uv_coordinates, det_uv_coordinates)
 
     # eval
-    eval_cv_centers_mean(perf_uv_coordinates, det_uv_coordinates, \
-        uv_set_one_name='Manual ground-truth projection image coordinates', uv_set_two_name='Object detection center image coordinates')
+    #pxl_mean_img007 = calc_cl_centers_pixel_dist_mean(aligned_gruth_uv_coordinates, det_uv_coordinates, [7]) 
+    pxl_mean_distances = centers_pxl_dist_mean_per_img_id(aligned_gruth_uv_coordinates, det_uv_coordinates)
 
-    eval_cam_poses_mean(ground_truth_cam_poses, perf_uv_adjusted_cam_poses)
+    eval_cam_poses_mean(ground_truth_cam_poses, gtruth_uv_adjusted_cam_poses)
 
     # print 'good.'
     print('good.')  
