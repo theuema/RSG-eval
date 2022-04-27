@@ -5,6 +5,7 @@ from glob import glob
 import math as m
 import sys
 from pathlib import Path
+import shutil
 
 def GetOPK(RMat):
     phi = m.asin(RMat[2][0])
@@ -43,20 +44,17 @@ def get_cl_paths(dir):
     # return a list of all image paths in a given directory
     return sorted(glob(os.path.join(dir, '*.cl')))
 
+def init_output_path(output_path):
+    # initialize output_path and clean existing output folder
+    if os.path.exists(output_path):
+        shutil.rmtree(output_path)
+    os.makedirs(output_path)
+
 def calc_pixel_dist(p1, p2):
     return abs(p1-p2)
 
 def calc_mean_pixel_dist(summed_distances, N):
     return summed_distances / N
-
-def eval_per_single_image_example(ground_truth_cam_pose, adjusted_cam_pose):
-    return 0
-
-def eval_per_multiple_image_examples_mean(img_ids, ground_truth_cam_poses, adjusted_cam_poses):
-    return 0
-
-def eval_all_examples_mean(ground_truth_cam_poses, adjusted_cam_poses):
-    return 0
 
 def get_cam_poses_rsg(rsg_path):
     # returns a list of dicts containing camera poses from par files in /RSG folder
@@ -226,7 +224,7 @@ def centers_pxl_dist_mean_per_img_id(uv_set_one, uv_set_two):
 
     for i, _ in enumerate(uv_set_one):
         img_id = i+1
-        pxl_mean_img_id = calc_cl_centers_pixel_dist_mean(aligned_gruth_uv_coordinates, det_uv_coordinates, [img_id])
+        pxl_mean_img_id = calc_cl_centers_pixel_dist_mean(uv_set_one, uv_set_two, [img_id])
         centers_pxl_dist_mean_per_img_id.append(pxl_mean_img_id)
     
     return centers_pxl_dist_mean_per_img_id
@@ -250,8 +248,7 @@ def find_missing_gtruth_cv_centers(gruth_uv_coordinates: list, det_uv_coordinate
                 continue
             else:
                 print('category ID (' + str(det_coord['CAT_ID']) + ') missing for image ID (%i)' % (i+1))
-    print('No missing cl centers in manually projected gtruth centers found (every category ID detected is found in gtruth data).')
-    return
+    print('INFO: No missing cl centers in manually projected gtruth centers found (every category ID detected is found in gtruth data).')
 
 def align_gtruth_to_det_projections(gruth_uv_coordinates: list, det_uv_coordinates: list):
     # param 'uv_coordinates'
@@ -283,6 +280,37 @@ def align_gtruth_to_det_projections(gruth_uv_coordinates: list, det_uv_coordinat
 
     return aligned_gruth_uv_coordinates
 
+def write_aligned_gtruth_cl_file(aligned_gruth_uv_coordinates: list, out_path: str):
+    out_path = out_path + '/cl_det-aligned_manual_gtruth'
+    write_cl_file(aligned_gruth_uv_coordinates, out_path)
+
+def write_det_cl_file(aligned_gruth_uv_coordinates: list, out_path: str):
+    out_path = out_path + '/cl_det'
+    write_cl_file(aligned_gruth_uv_coordinates, out_path)
+
+def write_cl_file(aligned_gruth_uv_coordinates: list, out_path: str):
+    # param 'aligned_gruth_uv_coordinates'
+    # [{},{},{}, ... {}] = uv_set_one[img_id - 1]
+    # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, ... ]
+   
+    cl_enc = 'Id;C;L;Status;SigImg\n' 
+    init_output_path(out_path)
+
+    for i, img_id_aligned_gruth_uv_coordinates in enumerate(aligned_gruth_uv_coordinates):
+        # conc fname.cl
+        img_id = '%03i' % (i+1)
+        out_cl_fpath = os.path.join(out_path, 'IMG' + str(img_id) + ('_IMG_') + str(img_id) + '.cl')
+        for gtruth_uv_coordinates in img_id_aligned_gruth_uv_coordinates:
+            # write first line encoding
+            write_enc = True if not os.path.isfile(out_cl_fpath) else False
+            with open(out_cl_fpath, 'a') as f:
+                if write_enc:
+                    f.write(cl_enc)
+                f.write('%i; ' % gtruth_uv_coordinates['CAT_ID'])
+                f.write(('%.2f; %.2f; ') % (gtruth_uv_coordinates['U'], gtruth_uv_coordinates['V']))
+                # write RSG comments
+                f.write('UM-; 1.000000\n')
+
 if __name__ == '__main__':
     ground_truth_cam_poses_fpath = './testdata/_rsg_combined_COCODF-tools_output/CPOSs.txt'
     # adjustment perfect marker projection paths
@@ -291,6 +319,8 @@ if __name__ == '__main__':
     # adjustment detection 2D centers paths
     # TODO: det_rsg_par_path = './testdata/RSG_detection_2D_centers/RSG'
     det_cl_path = './testdata/_rsg_combined_COCODF-tools_output/cl_det_multrec'
+    # general output path (can contain subfolder)
+    out_path = './out'
 
     try:
         if not os.path.isfile(ground_truth_cam_poses_fpath):
@@ -312,10 +342,14 @@ if __name__ == '__main__':
     # TODO: det_uv_adjusted_cam_poses = get_cam_poses_rsg(det_rsg_par_path)
     det_uv_coordinates = get_uv_coordinates_cl(det_cl_path)
 
-    
     # align
     find_missing_gtruth_cv_centers(gruth_uv_coordinates, det_uv_coordinates)
     aligned_gruth_uv_coordinates = align_gtruth_to_det_projections(gruth_uv_coordinates, det_uv_coordinates)
+    
+    # write aligned gtruth and detection data for adjustment 
+    # with RSG compatible filenames (see .PAR files)
+    write_aligned_gtruth_cl_file(aligned_gruth_uv_coordinates, out_path)
+    write_det_cl_file(det_uv_coordinates, out_path)
 
     # eval
     #pxl_mean_img007 = calc_cl_centers_pixel_dist_mean(aligned_gruth_uv_coordinates, det_uv_coordinates, [7]) 
