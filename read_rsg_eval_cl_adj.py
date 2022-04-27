@@ -192,7 +192,6 @@ def find_missing_perf_cv_centers(perf_uv_coordinates: list, det_uv_coordinates: 
 
             for perf_coord in perf_coordinates_img_id:
                 #print(det_coord['CAT_ID'])
-                val = perf_coord.values()
                 if det_coord['CAT_ID'] in perf_coord.values():
                     found_cat_id = True
 
@@ -200,15 +199,43 @@ def find_missing_perf_cv_centers(perf_uv_coordinates: list, det_uv_coordinates: 
                 continue
             else:
                 print('category ID (' + str(det_coord['CAT_ID']) + ') missing for image ID (%i)' % (i+1))
+    print('No missing cl centers in manually projected gtruth centers found (every category ID detected is found in gtruth data).')
+    return
 
+def align_gtruth_to_det_projections(perf_uv_coordinates: list, det_uv_coordinates: list):
+    # param 'uv_coordinates'
+    # [{},{},{}, ... {}] = uv_set_one[img_id - 1]
+    # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, ... ]
 
-    return 
+    aligned_perf_uv_coordinates = []
+    for i, det_coordinates_img_id in enumerate(det_uv_coordinates):
+        perf_coordinates_img_id = perf_uv_coordinates[i]
+        img_id_aligned_perf_uv_coordinates = []
+        for det_coord in det_coordinates_img_id:
+            found_cat_id = False
+
+            for perf_coord in perf_coordinates_img_id:
+                #print(det_coord['CAT_ID'])
+                if det_coord['CAT_ID'] in perf_coord.values():
+                    img_id_aligned_perf_uv_coordinates.append(perf_coord)
+                    found_cat_id = True
+
+            if found_cat_id is True:
+                continue
+            else:
+                print('Error: Missing coordinate for category ID (' + str(det_coord['CAT_ID']) + ') \
+                        in ground truth image data (img_id %s)' % (i+1))
+                sys.exit(1)
+        # append found category ID's to aligend gtruth data
+        aligned_perf_uv_coordinates.append(img_id_aligned_perf_uv_coordinates)
+
+    return aligned_perf_uv_coordinates
 
 if __name__ == '__main__':
     ground_truth_cam_poses_fpath = './testdata/_rsg_combined_COCODF-tools_output/CPOSs.txt'
     # adjustment perfect marker projection paths
-    perf_rsg_par_path = './testdata/RSG_perfect_2D_marker_proj/RSG' # Filenames must be split with '_' and have the number at last: e.g., IMG001_IMG_001.PAR
-    perf_cl_path = './testdata/RSG_perfect_2D_marker_proj/POINT_DATA/CL'
+    perf_rsg_par_path = './testdata/RSG_manual_gtruth_2D_marker_proj/RSG' # Filenames must be split with '_' and have the number at last: e.g., IMG001_IMG_001.PAR
+    perf_cl_path = './testdata/RSG_manual_gtruth_2D_marker_proj/POINT_DATA/CL'
     # adjustment detection 2D centers paths
     # TODO: det_rsg_par_path = './testdata/RSG_detection_2D_centers/RSG'
     det_cl_path = './testdata/_rsg_combined_COCODF-tools_output/cl_det_multrec'
@@ -233,9 +260,16 @@ if __name__ == '__main__':
     # TODO: det_uv_adjusted_cam_poses = get_cam_poses_rsg(det_rsg_par_path)
     det_uv_coordinates = get_uv_coordinates_cl(det_cl_path)
 
-    # eval
-    eval_cam_poses_mean(ground_truth_cam_poses, perf_uv_adjusted_cam_poses) 
-    eval_cv_centers_mean(perf_uv_coordinates, det_uv_coordinates, \
-        uv_set_one_name='Perfect marker projection image coordinates', uv_set_two_name='Object detection center image coordinates')
+    
+    # align
     find_missing_perf_cv_centers(perf_uv_coordinates, det_uv_coordinates)
-    print('gooood.')
+    aligned_perf_uv_coordinates = align_gtruth_to_det_projections(perf_uv_coordinates, det_uv_coordinates)
+
+    # eval
+    eval_cv_centers_mean(perf_uv_coordinates, det_uv_coordinates, \
+        uv_set_one_name='Manual ground-truth projection image coordinates', uv_set_two_name='Object detection center image coordinates')
+
+    eval_cam_poses_mean(ground_truth_cam_poses, perf_uv_adjusted_cam_poses)
+
+    # print 'good.'
+    print('good.')  
