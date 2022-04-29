@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+  <PhysicalEntity prefix="unknown" relpath="." type="RSGimagemodel" version="3.1" state="----------" size="0">
+    <Attributes Set="Status">
+      <Tag id="GEOMETRY" type="string">pers</Tag>
+      <Tag id="ORIENTATION" type="string">RIGHT</Tag>
+      <Tag id="SENSOR_NAME" type="string">Known-Perspective</Tag>
+      <Tag id="SUBSENSOR_NAME" type="string">5mm</Tag>
+      <Tag id="SENSOR_ID" type="string">1</Tag>
+      <Tag id="CAMERA_NAME" type="string">Basler_aca2440-35uc</Tag>
+      <Tag id="SETUP_DONE" type="int">2</Tag>
+      <Tag id="CARTESIAN_SYSTEM" type="int">13</Tag>
+      <Tag id="IMU_ROTATION_SEQ" type="int">0</Tag>
+      <Tag id="DISTORTION_DEF" type="int">0</Tag>
+      <Tag id="USE_FRP" type="int">0</Tag>
+      <Tag id="GEOMETRY_DETAIL" type="int">0</Tag>
+      <Tag id="ROTATION_SEQ" type="int">0</Tag>
+      <Tag id="PATH_NUMBER" type="int">0</Tag>
+      <Tag id="BS_ROTATION_SEQ" type="int">0</Tag>
+      <Tag id="RO_ROTATION_SEQ" type="int">0</Tag>
+      <Tag id="NADJUSTS" type="int">10</Tag>
+    </Attributes>
+    <Attributes Set="GeneralParameters">
+      <Tag id="DATE" type="string">00-   -0</Tag>
+      <Tag id="ORBIT_NAME" type="string">IMG006_IMG_006</Tag>
+      <Tag id="EXTORB_NAME" type="string"></Tag>
+      <Tag id="PROJ_NAME" type="string"></Tag>
+      <Tag id="TRF_NAME" type="string"></Tag>
+      <Tag id="ADJUST_FLAGS" type="bool">t t t t t t f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f f</Tag>
+      <Tag id="FLYING_HEIGHT" type="float">1.000000000000000</Tag>
+      <Tag id="TILT" type="float">-4.000000000000000</Tag>
+      <Tag id="INCIDENCE_ANGLE" type="float">-92.00000000000000</Tag>
+      <Tag id="AZIMUTH" type="float">-55.00000000000000</Tag>
+      <Tag id="OFFSET" type="float">0.000000000000000</Tag>
+      <Tag id="RES_X" type="float">0.000000000000000</Tag>
+      <Tag id="RES_Y" type="float">0.000000000000000</Tag>
+      <Tag id="INNER_ORI" type="float">0.000000000000000 0.000000000000000 0.000000000000000 0.000000000000000 0.000000000000000 0.000000000000000</Tag>
+      <Tag id="EPIPOLAR" type="float">0.000000000000000</Tag>
+      <Tag id="CPF_VERSION" type="float">2.000000000000000</Tag>
+      <Tag id="NORM_RADIUS" type="float">1060.000000000000</Tag>
+      <Tag id="MERIDIAN_CONVERGENCE" type="float">0.000000000000000</Tag>
+      <Tag id="MOUNTING_OMEGA" type="float">0.000000000000000</Tag>
+      <Tag id="MOUNTING_PHI" type="float">0.000000000000000</Tag>
+      <Tag id="MOUNTING_KAPPA" type="float">0.000000000000000</Tag>
+      <Tag id="IS_PLATFORM" type="bool">f</Tag>
+      <Tag id="REFCAM_IS_GPS" type="bool">f</Tag>
+      <Tag id="IS_REFERENCE" type="bool">f</Tag>
+      <Tag id="SCENE_START_TIME" type="string"></Tag>
+    </Attributes>
+    <Attributes Set="InitialGeometry">
+      <Tag id="USE_VEL_POLY" type="bool">f</Tag>
+      <Tag id="NORBX" type="int">1</Tag>
+      <Tag id="ORBX" type="float">-1.425077905099203</Tag>
+      <Tag id="NORBY" type="int">1</Tag>
+      <Tag id="ORBY" type="float">0.655998969187949</Tag>
+      <Tag id="NORBZ" type="int">1</Tag>
+      <Tag id="ORBZ" type="float">1.539395161752946</Tag>
+      <Tag id="NOMEGA" type="int">1</Tag>
+      <Tag id="OMEGA" type="float">-1.632327361783299</Tag>
+      <Tag id="NPHI" type="int">1</Tag>
+      <Tag id="PHI" type="float">-0.058750161756670</Tag>
+      <Tag id="NKAPPA" type="int">1</Tag>
+      <Tag id="KAPPA" type="float">5.321511180977912</Tag>
+      <Tag id="SIGMA_OMEGA" type="float">1.000000000000000</Tag>
+      <Tag id="SIGMA_PHI" type="float">1.000000000000000</Tag>
+      <Tag id="SIGMA_KAPPA" type="float">1.000000000000000</Tag>
+      <Tag id="FOCAL_LENGTH" type="float">1462.005316192306</Tag>
+      <Tag id="PPA" type="float">-28.42608730979581 -34.36221500783516</Tag>
+      <Tag id="DISTORTION_USE" type="bool">t</Tag>
+      <Tag id="DISTO_K" type="float">-0.000000021345559 0.000000000000024 -0.556695934367013E-20 0.000000000000000</Tag>
+      <Tag id="DISTO_P" type="float">0.000002530837081 -0.000001594774977</Tag>
+      <Tag id="DISTO_B" type="float">-0.005160832999827 -0.001556816391396</Tag>
+      <Tag id="SIGMA_ORBIT" type="float">1.000000000000000 1.000000000000000 1.000000000000000</Tag>
+      <Tag id="BORESIGHT" type="float">0.000000000000000 0.000000000000000 0.000000000000000</Tag>
+      <Tag id="SIGMA_BORESIGHT" type="float">0.000000010000000 0.000000010000000 0.000000010000000</Tag>
+      <Tag id="LEVERARM" type="float">0.000000000000000 0.000000000000000 0.000000000000000</Tag>
+      <Tag id="SIGMA_LEVERARM" type="float">0.000010000000000 0.000010000000000 0.000010000000000</Tag>
+      <Tag id="RELORI_ANGLE" type="float">0.000000000000000 0.000000000000000 0.000000000000000</Tag>
+      <Tag id="SIGMA_RELORI_ANGLE" type="float">0.000000010000000 0.000000010000000 0.000000010000000</Tag>
+      <Tag id="BASE_VECTOR" type="float">0.000000000000000 0.000000000000000 0.000000000000000</Tag>
+      <Tag id="SIGMA_BASE_VECTOR" type="float">0.000010000000000 0.000010000000000 0.000010000000000</Tag>
+      <Tag id="IMU_ANGLE" type="float">-2.102981702887587 -0.747608684635514 4.395732299806506</Tag>
+      <Tag id="SIGMA_IMU_ANGLE" type="float">0.000000010000000 0.000000010000000 0.000000010000000</Tag>
+      <Tag id="GPS_POSITION" type="float">-1.425077905099203 0.655998969187949 1.539395161752946</Tag>
+      <Tag id="SIGMA_GPS_POSITION" type="float">0.000010000000000 0.000010000000000 0.000010000000000</Tag>
+    </Attributes>
+    <Attributes Set="AdjustedGeometry">
+      <Tag id="USE_VEL_POLY" type="bool">f</Tag>
+      <Tag id="NORBX" type="int">1</Tag>
+      <Tag id="ORBX" type="float">-1.425077886965376</Tag>
+      <Tag id="NORBY" type="int">1</Tag>
+      <Tag id="ORBY" type="float">0.655998966012102</Tag>
+      <Tag id="NORBZ" type="int">1</Tag>
+      <Tag id="ORBZ" type="float">1.539395146212662</Tag>
+      <Tag id="NOMEGA" type="int">1</Tag>
+      <Tag id="OMEGA" type="float">-1.632327386897859</Tag>
+      <Tag id="NPHI" type="int">1</Tag>
+      <Tag id="PHI" type="float">-0.058750177504810</Tag>
+      <Tag id="NKAPPA" type="int">1</Tag>
+      <Tag id="KAPPA" type="float">5.321511170936596</Tag>
+      <Tag id="SIGMA_OMEGA" type="float">1.000000000000000</Tag>
+      <Tag id="SIGMA_PHI" type="float">1.000000000000000</Tag>
+      <Tag id="SIGMA_KAPPA" type="float">1.000000000000000</Tag>
+      <Tag id="FOCAL_LENGTH" type="float">1462.005316192306</Tag>
+      <Tag id="PPA" type="float">-28.42608730979581 -34.36221500783516</Tag>
+      <Tag id="DISTORTION_USE" type="bool">t</Tag>
+      <Tag id="DISTO_K" type="float">-0.000000021345559 0.000000000000024 -0.556695934367013E-20 0.000000000000000</Tag>
+      <Tag id="DISTO_P" type="float">0.000002530837081 -0.000001594774977</Tag>
+      <Tag id="DISTO_B" type="float">-0.005160832999827 -0.001556816391396</Tag>
+      <Tag id="SIGMA_ORBIT" type="float">1.000000000000000 1.000000000000000 1.000000000000000</Tag>
+      <Tag id="BORESIGHT" type="float">0.000000000000000 0.000000000000000 0.000000000000000</Tag>
+      <Tag id="SIGMA_BORESIGHT" type="float">0.000000010000000 0.000000010000000 0.000000010000000</Tag>
+      <Tag id="LEVERARM" type="float">0.000000000000000 0.000000000000000 0.000000000000000</Tag>
+      <Tag id="SIGMA_LEVERARM" type="float">0.000010000000000 0.000010000000000 0.000010000000000</Tag>
+      <Tag id="RELORI_ANGLE" type="float">0.000000000000000 0.000000000000000 0.000000000000000</Tag>
+      <Tag id="SIGMA_RELORI_ANGLE" type="float">0.000000010000000 0.000000010000000 0.000000010000000</Tag>
+      <Tag id="BASE_VECTOR" type="float">0.000000000000000 0.000000000000000 0.000000000000000</Tag>
+      <Tag id="SIGMA_BASE_VECTOR" type="float">0.000010000000000 0.000010000000000 0.000010000000000</Tag>
+      <Tag id="IMU_ANGLE" type="float">2.378419851733427 1.485747537079001 4.864631021111043</Tag>
+      <Tag id="SIGMA_IMU_ANGLE" type="float">0.000000010000000 0.000000010000000 0.000000010000000</Tag>
+      <Tag id="GPS_POSITION" type="float">-1.425077886965376 0.655998966012102 1.539395146212662</Tag>
+      <Tag id="SIGMA_GPS_POSITION" type="float">0.000010000000000 0.000010000000000 0.000010000000000</Tag>
+    </Attributes>
+    <Dependencies/>
+  </PhysicalEntity>

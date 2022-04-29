@@ -1,4 +1,5 @@
 from cmath import pi
+from re import I
 import xml.etree.ElementTree as ET
 import os
 from glob import glob
@@ -6,6 +7,8 @@ import math as m
 import sys
 from pathlib import Path
 import shutil
+
+
 
 def GetOPK(RMat):
     phi = m.asin(RMat[2][0])
@@ -36,13 +39,16 @@ def GetOPK_transposed(RMat):
         kappa = m.atan2( (-RMat[1][0]/m.cos(phi)), RMat[0][0]/m.cos(phi) )
     return omega, phi, kappa
 
+
 def get_par_paths(dir):
     # return a list of all image paths in a given directory
     return sorted(glob(os.path.join(dir, '*.PAR')))
 
+
 def get_cl_paths(dir):
     # return a list of all image paths in a given directory
     return sorted(glob(os.path.join(dir, '*.cl')))
+
 
 def init_output_path(output_path):
     # initialize output_path and clean existing output folder
@@ -50,11 +56,17 @@ def init_output_path(output_path):
         shutil.rmtree(output_path)
     os.makedirs(output_path)
 
+
 def calc_pixel_dist(p1, p2):
+    # param p1, p2 = float/int pixel values
     return abs(p1-p2)
 
-def calc_mean_pixel_dist(summed_distances, N):
-    return summed_distances / N
+
+def calc_mean_distances(distances):
+    # param distances
+    # dist = distances[img_id - 1]
+    return sum(distances)/len(distances)
+
 
 def get_cam_poses_rsg(rsg_path):
     # returns a list of dicts containing camera poses from par files in /RSG folder
@@ -93,15 +105,16 @@ def get_cam_poses_rsg(rsg_path):
 
     return adjusted_cam_poses
 
-def get_cam_poses(ground_truth_cam_poses_fpath):
+
+def get_cam_poses_txt(cam_poses_txt_fpath):
     # returns a list of dicts containing camera
-    #  poses from a file
+    # poses from a file
     # where the index is the img_id - 1
     # {'ID': 1, 'X': -1.2461, 'Y': 0.3497, 'Z': 1.2641, 'OMEGA': -91.9631, 'PHI': -3.2676, 'KAPPA': 306.7033}
 
     # Get ground truth camera poses
-    f = open(ground_truth_cam_poses_fpath, 'r')
-    ground_truth_cam_poses = []
+    f = open(cam_poses_txt_fpath, 'r')
+    cam_poses = []
     for line in f.readlines()[1:]:
         pos = line.rstrip().split(';')
         ground_truth_cam_pose = {}
@@ -123,11 +136,12 @@ def get_cam_poses(ground_truth_cam_poses_fpath):
         ground_truth_cam_pose['OMEGA'] = round(omega, 4)
         ground_truth_cam_pose['PHI'] = round(phi, 4)
         ground_truth_cam_pose['KAPPA'] = round(kappa, 4)
-        ground_truth_cam_poses.append(ground_truth_cam_pose)
+        cam_poses.append(ground_truth_cam_pose)
 
-    return ground_truth_cam_poses # sorted(ground_truth_cam_poses, key=lambda d: d['ID'])
+    return cam_poses # sorted(cam_poses, key=lambda d: d['ID'])
 
-def get_uv_coordinates_cl(cl_path):
+
+def get_UV_coordinates_cl(cl_path):
     # returns a list of lists containing the uv coordinates of an image id
     # where the index is the img_id - 1
     # [{},{},{}, ... {}] = returnlist[img_id - 1]
@@ -141,7 +155,7 @@ def get_uv_coordinates_cl(cl_path):
         sys.exit(1)
 
     cl_img_id_coordinates = []
-    for i, cl_fpath in enumerate(cl_fpaths):
+    for cl_fpath in cl_fpaths:
         f = open(cl_fpath, 'r')
         cl_coordinates = []
         for line in f.readlines()[1:]:
@@ -162,12 +176,22 @@ def get_uv_coordinates_cl(cl_path):
     
     return cl_img_id_coordinates
 
-def eval_cam_poses_mean(ground_truth_cam_poses: list, adjusted_cam_poses: list):
+
+def calc_cam_poses_dist(ground_truth_cam_poses: list, adjusted_cam_poses: list):
     # param 'cam poses'
     # {} = cam_poses[img_id - 1] 
     # {'ID': 1, 'X': -1.2461, 'Y': 0.3497, 'Z': 1.2641, 'OMEGA': -91.9631, 'PHI': -3.2676, 'KAPPA': 306.7033} 
-    
-    return
+
+    distances = []
+    for i, ground_truth_cam_pose in enumerate(ground_truth_cam_poses):
+        adjusted_cam_pose = adjusted_cam_poses[i] 
+        
+        ground_truth_coord = (ground_truth_cam_pose['X'], ground_truth_cam_pose['Y'], ground_truth_cam_pose['Z'])
+        adjusted_coord = (adjusted_cam_pose['X'], adjusted_cam_pose['Y'], adjusted_cam_pose['Z'])
+        distances.append(m.dist(ground_truth_coord, adjusted_coord))
+
+    return distances
+
 
 def calc_cl_centers_pixel_dist_mean(uv_set_one: list, uv_set_two: list, img_ids: list = None):
     # param 'set'
@@ -208,10 +232,10 @@ def calc_cl_centers_pixel_dist_mean(uv_set_one: list, uv_set_two: list, img_ids:
                 sys.exit(1)  
             
 
-    return  {'U_PXL_DIST_MEAN': round(u_pxl_distance, 2), 'V_PXL_DIST_MEAN': round(v_pxl_distance, 2), 'IMG_IDS': img_ids}
+    return  {'U_PXL_DIST_MEAN': round(u_pxl_distance/N, 2), 'V_PXL_DIST_MEAN': round(v_pxl_distance/N, 2), 'IMG_IDS': img_ids}
+
 
 def centers_pxl_dist_mean_per_img_id(uv_set_one, uv_set_two):
-
     # the number of center coordinates must be equal
     for i, img_id_coordinates_set_one in enumerate(uv_set_one):
         img_id_coordinates_set_two = uv_set_two[i] 
@@ -228,6 +252,7 @@ def centers_pxl_dist_mean_per_img_id(uv_set_one, uv_set_two):
         centers_pxl_dist_mean_per_img_id.append(pxl_mean_img_id)
     
     return centers_pxl_dist_mean_per_img_id
+
 
 def find_missing_gtruth_cv_centers(gruth_uv_coordinates: list, det_uv_coordinates: list):
     # param 'uv_coordinates'
@@ -248,7 +273,8 @@ def find_missing_gtruth_cv_centers(gruth_uv_coordinates: list, det_uv_coordinate
                 continue
             else:
                 print('category ID (' + str(det_coord['CAT_ID']) + ') missing for image ID (%i)' % (i+1))
-    print('INFO: No missing cl centers in manually projected gtruth centers found (every category ID detected is found in gtruth data).')
+    print('[INFO]: No missing cl centers in manually projected gtruth centers found (every category ID detected is found in gtruth data).')
+
 
 def align_gtruth_to_det_projections(gruth_uv_coordinates: list, det_uv_coordinates: list):
     # param 'uv_coordinates'
@@ -280,15 +306,13 @@ def align_gtruth_to_det_projections(gruth_uv_coordinates: list, det_uv_coordinat
 
     return aligned_gruth_uv_coordinates
 
-def write_aligned_gtruth_cl_file(aligned_gruth_uv_coordinates: list, out_path: str):
-    out_path = out_path + '/cl_det-aligned_manual_gtruth'
-    write_cl_file(aligned_gruth_uv_coordinates, out_path)
 
-def write_det_cl_file(aligned_gruth_uv_coordinates: list, out_path: str):
-    out_path = out_path + '/cl_det'
-    write_cl_file(aligned_gruth_uv_coordinates, out_path)
+def write_RSG_cl_files(aligned_gruth_uv_coordinates: list, out_path: str, folder_name: str):
+    out_path = out_path + folder_name 
+    write_cl_files(aligned_gruth_uv_coordinates, out_path)
 
-def write_cl_file(aligned_gruth_uv_coordinates: list, out_path: str):
+
+def write_cl_files(aligned_gruth_uv_coordinates: list, out_path: str):
     # param 'aligned_gruth_uv_coordinates'
     # [{},{},{}, ... {}] = uv_set_one[img_id - 1]
     # [{'CAT_ID': 17, 'U': 1311.0, 'V': 866.0}, ... ]
@@ -311,51 +335,133 @@ def write_cl_file(aligned_gruth_uv_coordinates: list, out_path: str):
                 # write RSG comments
                 f.write('UM-; 1.000000\n')
 
+
+def print_cam_pos_distances(cam_poses_set_one, cam_poses_set_two, s: str):
+    m_distances = calc_cam_poses_dist(cam_poses_set_one, cam_poses_set_two)
+    cm_distances = [round(d * 100, 4) for d in m_distances]
+    cm_mean_distance = round(calc_mean_distances(cm_distances), 4)
+    print(s)
+    print('distances per camera pos (cm): %s' % cm_distances)  
+    print('mean distance: %scm' % cm_mean_distance)
+
+
+def print_pxl_distances(UV_coordinates_set_one, UV_coordinates_set_two):
+    pxl_mean_distances_per_img_id_dicts = centers_pxl_dist_mean_per_img_id(UV_coordinates_set_one, UV_coordinates_set_two)
+    pxl_mean_distances_U_per_img_id_list = [mean_distances_per_img_id['U_PXL_DIST_MEAN'] for mean_distances_per_img_id in pxl_mean_distances_per_img_id_dicts]
+    pxl_mean_distances_V_per_img_id_list = [mean_distances_per_img_id['V_PXL_DIST_MEAN'] for mean_distances_per_img_id in pxl_mean_distances_per_img_id_dicts]
+    pxl_mean_distance_U = calc_mean_distances(pxl_mean_distances_U_per_img_id_list)
+    pxl_mean_distance_V = calc_mean_distances(pxl_mean_distances_V_per_img_id_list)
+
+    print('mean pixel distances U per image_id: %s' % pxl_mean_distances_U_per_img_id_list)
+    print('mean pixel distances V per image_id: %s' % pxl_mean_distances_V_per_img_id_list)
+    print('mean pixel distance U over image_ids: %s' % round(pxl_mean_distance_U, 2))
+    print('mean pixel distance V over image_ids: %s' % round(pxl_mean_distance_V, 2))
+
+
+
 if __name__ == '__main__':
-    ground_truth_cam_poses_fpath = './testdata/_rsg_combined_COCODF-tools_output/CPOSs.txt'
-    # adjustment perfect marker projection paths
-    gtruth_rsg_par_path = './testdata/RSG_manual_gtruth_2D_marker_proj/RSG' # Filenames must be split with '_' and have the number at last: e.g., IMG001_IMG_001.PAR
-    gruth_cl_path = './testdata/RSG_manual_gtruth_2D_marker_proj/POINT_DATA/CL'
-    # adjustment detection 2D centers paths
-    # TODO: det_rsg_par_path = './testdata/RSG_detection_2D_centers/RSG'
+    # YES: process COCODF-tools output to RSG compatible .cl files and save in out_path
+    # NO: process RSG adjustment outputs
+    process_COCODF_to_output = False
+
+    # ------ INITIAL PATHS (COCODF-tools & manual marker projection)
+    # define paths COCODF-tools outputs
+    OptiTrack_cam_poses_txt_fpath = './testdata/_rsg_combined_COCODF-tools_output/CPOSs.txt'
     det_cl_path = './testdata/_rsg_combined_COCODF-tools_output/cl_det_multrec'
     # general output path (can contain subfolder)
     out_path = './out'
 
+    # define paths manual adjustment of perfect marker projection (Gutjhar)
+    gtruth_rsg_par_path = './testdata/RSG_manual_gtruth_2D_marker_proj/RSG' # Filenames must be split with '_' and have the number at last: e.g., IMG001_IMG_001.PAR
+    gruth_cl_path = './testdata/RSG_manual_gtruth_2D_marker_proj/POINT_DATA/CL'
+
+    # ------ PATHS (RSG RESULTS)
+    det_rsg_par_path = './testdata/RSG_RESULTS/cl_det_RSG' # adjustment from files generated: 'write_RSG_det_cl_files(det_UV_coordinates, out_path)'
+    alignedGtruth_rsg_par_path = './testdata/RSG_RESULTS/cl_detAlignedGtruth_RSG' # adjustment from files generated: \
+                                                                                        # 'write_RSG_detAligned_gtruth_cl_files(detAligned_gtruth_UV_coordinates, out_path)' 
+
     try:
-        if not os.path.isfile(ground_truth_cam_poses_fpath):
+        if not os.path.isfile(OptiTrack_cam_poses_txt_fpath):
             raise FileExistsError('Cam pose file does not exist.')
         if not os.path.isdir(gtruth_rsg_par_path) \
             or not os.path.isdir(gruth_cl_path) \
-                or not os.path.isdir(det_cl_path): # TODO: or not os.path.isdir(det_rsg_par_path)
+                or not os.path.isdir(det_cl_path) \
+                    or not os.path.isdir(det_rsg_par_path) \
+                        or not os.path.isdir(alignedGtruth_rsg_par_path): 
             raise ValueError('Some directory for evaluation does not exist.')
     except Exception as e:
                 print('Exception: {}'.format(str(e)), file=sys.stderr)
                 sys.exit(1)
 
-    # get adjustment data
-    ground_truth_cam_poses = get_cam_poses(ground_truth_cam_poses_fpath)
-    # gtruth marker projection adjustment
-    gtruth_uv_adjusted_cam_poses = get_cam_poses_rsg(gtruth_rsg_par_path)
-    gruth_uv_coordinates = get_uv_coordinates_cl(gruth_cl_path)
-    # detection centers adjustment
-    # TODO: det_uv_adjusted_cam_poses = get_cam_poses_rsg(det_rsg_par_path)
-    det_uv_coordinates = get_uv_coordinates_cl(det_cl_path)
-
-    # align
-    find_missing_gtruth_cv_centers(gruth_uv_coordinates, det_uv_coordinates)
-    aligned_gruth_uv_coordinates = align_gtruth_to_det_projections(gruth_uv_coordinates, det_uv_coordinates)
+    # ------ INITIAL READS
+    # read gtruth OptiTrack camera data (= measured/calculated pose XYZ+OPK of camera frame origin) 
+    gtruth_OptiTrack_cam_poses = get_cam_poses_txt(OptiTrack_cam_poses_txt_fpath)
     
-    # write aligned gtruth and detection data for adjustment 
-    # with RSG compatible filenames (see .PAR files)
-    write_aligned_gtruth_cl_file(aligned_gruth_uv_coordinates, out_path)
-    write_det_cl_file(det_uv_coordinates, out_path)
+    # read gtruth cl files with centers of manually projected object markers to the image plane
+    gtruth_UV_coordinates = get_UV_coordinates_cl(gruth_cl_path)
 
-    # eval
-    #pxl_mean_img007 = calc_cl_centers_pixel_dist_mean(aligned_gruth_uv_coordinates, det_uv_coordinates, [7]) 
-    pxl_mean_distances = centers_pxl_dist_mean_per_img_id(aligned_gruth_uv_coordinates, det_uv_coordinates)
+    # read detected cl files
+    det_UV_coordinates = get_UV_coordinates_cl(det_cl_path)
+    # align (find potential missing object centers in gtruth_UV_coordinates; align them to detection centers 
+    # (result = only those centers intersecting with detected category ID's are part of detAligned_gtruth_UV_coordinates)
+    find_missing_gtruth_cv_centers(gtruth_UV_coordinates, det_UV_coordinates)
+    detAligned_gtruth_UV_coordinates = align_gtruth_to_det_projections(gtruth_UV_coordinates, det_UV_coordinates)
 
-    eval_cam_poses_mean(ground_truth_cam_poses, gtruth_uv_adjusted_cam_poses)
+    if process_COCODF_to_output:
+        # write aligned gtruth and detection data for adjustment with RSG compatible filenames (see .PAR files)
+        write_RSG_cl_files(det_UV_coordinates, out_path, '/cl_det')
+        write_RSG_cl_files(detAligned_gtruth_UV_coordinates, out_path, '/cl_detAlignedGtruth')
+        print('det & alignedGtruth UV_coordinates written as .cl-files (%s)' % out_path) 
+    else:
+        # ------ ADJUSTMENT READS
+        # read XYZ+OPK adjustment of det_UV_coordinates (= displaced/weaker object centers than gtruth marker projection; yields cam_poses less accurate)
+        det_cam_poses = get_cam_poses_rsg(det_rsg_par_path)
+        # read XYZ+OPK adjustment of aligned_gruth_UV_coordinates
+        detAligned_gtruth_UV_cam_poses = get_cam_poses_rsg(alignedGtruth_rsg_par_path)
+
+        # --- POSE ESTIMATION DISTANCES
+        # read gtruth marker projection adjustment (= best possible esimation of OptiTrack_cam_poses)
+        gtruth_UV_cam_poses = get_cam_poses_rsg(gtruth_rsg_par_path) 
+        # gtruth_OptiTrack_cam_poses vs. gtruth_UV_cam_poses
+        s = '''\n------ gtruth_OptiTrack_cam_poses vs. gtruth_UV_cam_poses
+            "Best possible pose estimation compared to OptiTrack measured camera poses (used gtruth object centers (manually projected) for adjustment)"\n''' 
+        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, gtruth_UV_cam_poses, s)
+
+        # gtruth_OptiTrack_cam_poses vs. detAligned_gtruth_UV_cam_poses
+        s = '''\n------ gtruth_OptiTrack_cam_poses vs. detAligned_gtruth_UV_cam_poses
+            "Pose estimation for object centers generated from detection-aligned gtruth"\n'''
+        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses, s)
+        # calculate the PIXEL DISTANCE of the object centers used for adjustment
+
+        # gtruth_UV_cam_poses vs. detAligned_gtruth_UV_cam_poses
+        s = '''\n------ gtruth_UV_cam_poses vs. detAligned_gtruth_UV_cam_poses
+            "Pose estimation diff between gtruth and detection-aligned gtruth object centers"\n'''
+        print_cam_pos_distances(gtruth_UV_cam_poses, detAligned_gtruth_UV_cam_poses, s) 
+        # calculate the PIXEL DISTANCE of the object centers used for adjustment
+
+        # gtruth_OptiTrack_cam_poses vs. det_cam_poses
+        s = '''\n------ gtruth_OptiTrack_cam_poses vs. det_cam_poses
+            "Pose estimation for object centers generated from object detection"\n'''
+        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, det_cam_poses, s)
+
+        # # det_cam_poses vs. gtruth_UV_cam_poses
+        # s = '''------ det_cam_poses vs. gtruth_UV_cam_poses\n
+        #             "Pose estimation diff between detected and gtruth object centers"'''
+        # print_cam_pos_distances(det_cam_poses, gtruth_UV_cam_poses, s)
+        # # calculate the PIXEL DISTANCE of the object centers used for adjustment
+
+        # det_cam_poses vs. detAligned_gtruth_UV_cam_poses 
+        print('''\n------ det_cam_poses vs. detAligned_gtruth_UV_cam_poses\n
+            "Pose estimation diff between detected and detection-aligned gtruth object centers"''')
+        s = '''(gtruth_OptiTrack_cam_poses vs. detAligned_gtruth_UV_cam_poses)'''
+        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses, s)
+        s = '''(gtruth_OptiTrack_cam_poses vs. det_cam_poses)'''
+        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, det_cam_poses, s)
+        #print_cam_pos_distances(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses, s)
+        # calculate the PIXEL DISTANCE of the object centers used for adjustment
+        print('''(Pixel distances of centers used for adjusting det_cam_poses & detAligned_gtruth_UV_cam_poses)''')
+        print_pxl_distances(det_UV_coordinates, detAligned_gtruth_UV_coordinates)
 
     # print 'good.'
-    print('good.')  
+    print('''------\n
+                good.''')
