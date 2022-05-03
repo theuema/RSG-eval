@@ -1,4 +1,5 @@
 from cmath import pi
+from copy import deepcopy
 from re import I
 import xml.etree.ElementTree as ET
 import os
@@ -192,6 +193,26 @@ def calc_cam_poses_dist(ground_truth_cam_poses: list, adjusted_cam_poses: list):
 
     return distances
 
+def calc_cam_poses_orientation_diff(ground_truth_cam_poses: list, adjusted_cam_poses: list):
+    # param 'cam poses'
+    # {} = cam_poses[img_id - 1] 
+    # {'ID': 1, 'X': -1.2461, 'Y': 0.3497, 'Z': 1.2641, 'OMEGA': -91.9631, 'PHI': -3.2676, 'KAPPA': 306.7033} 
+
+    orient_diffs = []
+    for i, ground_truth_cam_pose in enumerate(ground_truth_cam_poses):
+        adjusted_cam_pose = adjusted_cam_poses[i] 
+        ground_truth_orientation = (ground_truth_cam_pose['OMEGA'], ground_truth_cam_pose['PHI'], ground_truth_cam_pose['KAPPA'])
+        adjusted_orientation = (adjusted_cam_pose['OMEGA'], adjusted_cam_pose['PHI'], adjusted_cam_pose['KAPPA'])
+        orient_diff_tuple = tuple(map(lambda i, j: abs(i - j), ground_truth_orientation, adjusted_orientation))
+        orient_diffs.append(orient_diff_tuple)
+    return orient_diffs
+
+def get_orientations_from_poses(cam_poses):
+    orientations = []
+    for cam_pose in cam_poses:
+        orientation = (cam_pose['OMEGA'], cam_pose['PHI'], cam_pose['KAPPA'])
+        orientations.append(orientation)
+    return orientations
 
 def calc_cl_centers_pixel_dist_mean(uv_set_one: list, uv_set_two: list, img_ids: list = None):
     # param 'set'
@@ -337,12 +358,37 @@ def write_cl_files(aligned_gruth_uv_coordinates: list, out_path: str):
 
 
 def print_cam_pos_distances(cam_poses_set_one, cam_poses_set_two, s: str):
+    # param 'cam_poses_set_X'
+    # {} = cam_poses[img_id - 1] 
+    # {'ID': 1, 'X': -1.2461, 'Y': 0.3497, 'Z': 1.2641, 'OMEGA': -91.9631, 'PHI': -3.2676, 'KAPPA': 306.7033} 
+
     m_distances = calc_cam_poses_dist(cam_poses_set_one, cam_poses_set_two)
     cm_distances = [round(d * 100, 4) for d in m_distances]
     cm_mean_distance = round(calc_mean_distances(cm_distances), 4)
     print(s)
     print('distances per camera pos (cm): %s' % cm_distances)  
     print('mean distance: %scm' % cm_mean_distance)
+
+
+def print_cam_orientation_diff(cam_poses_set_one, cam_poses_set_two):
+    # param 'cam_poses_set'
+    # {} = cam_poses[img_id - 1] 
+    # {'ID': 1, 'X': -1.2461, 'Y': 0.3497, 'Z': 1.2641, 'OMEGA': -91.9631, 'PHI': -3.2676, 'KAPPA': 306.7033} 
+
+    orient_diffs = calc_cam_poses_orientation_diff(cam_poses_set_one, cam_poses_set_two)
+    for i, orient_diff in enumerate(orient_diffs):
+        print('IMG%02i | OMEGA: %.2f | PHI: %.2f | KAPPA: %.2f'  % \
+            (i, round(orient_diff[0], 2), round(orient_diff[1], 2), round(orient_diff[2], 2)))
+    
+    return
+
+def print_cam_orientation_comparison(cam_poses_set_one, cam_poses_set_two):
+    for i, cam_pose_one in enumerate(cam_poses_set_one):
+        cam_pose_two = cam_poses_set_two[i]
+
+        print('IMG%02i | OMEGA: %.2f , %.2f | PHI: %.2f , %.2f | KAPPA: %.2f , %.2f'  % \
+            ((i+1), cam_pose_one['OMEGA'], cam_pose_two['OMEGA'], cam_pose_one['PHI'], cam_pose_two['PHI'], \
+                cam_pose_one['KAPPA'], cam_pose_two['KAPPA']))
 
 
 def print_pxl_distances(UV_coordinates_set_one, UV_coordinates_set_two):
@@ -379,6 +425,7 @@ if __name__ == '__main__':
     det_rsg_par_path = './testdata/RSG_RESULTS/cl_det_RSG' # adjustment from files generated: 'write_RSG_det_cl_files(det_UV_coordinates, out_path)'
     alignedGtruth_rsg_par_path = './testdata/RSG_RESULTS/cl_detAlignedGtruth_RSG' # adjustment from files generated: \
                                                                                         # 'write_RSG_detAligned_gtruth_cl_files(detAligned_gtruth_UV_coordinates, out_path)' 
+    img10_rsg_par_path = './testdata/RSG_RESULTS/img10_RSG' # adjustment form manual files generated (see img10.info)
 
     try:
         if not os.path.isfile(OptiTrack_cam_poses_txt_fpath):
@@ -387,7 +434,8 @@ if __name__ == '__main__':
             or not os.path.isdir(gruth_cl_path) \
                 or not os.path.isdir(det_cl_path) \
                     or not os.path.isdir(det_rsg_par_path) \
-                        or not os.path.isdir(alignedGtruth_rsg_par_path): 
+                        or not os.path.isdir(alignedGtruth_rsg_par_path) \
+                            or not os.path.isdir(img10_rsg_par_path): 
             raise ValueError('Some directory for evaluation does not exist.')
     except Exception as e:
                 print('Exception: {}'.format(str(e)), file=sys.stderr)
@@ -418,6 +466,8 @@ if __name__ == '__main__':
         det_cam_poses = get_cam_poses_rsg(det_rsg_par_path)
         # read XYZ+OPK adjustment of aligned_gruth_UV_coordinates
         detAligned_gtruth_UV_cam_poses = get_cam_poses_rsg(alignedGtruth_rsg_par_path)
+        # red XYZ+OPK adjustments of manual designed UV coordinates (see img10.info)
+        img10_UV_cam_poses = get_cam_poses_rsg(img10_rsg_par_path)
 
         # --- POSE ESTIMATION DISTANCES
         # read gtruth marker projection adjustment (= best possible esimation of OptiTrack_cam_poses)
@@ -426,29 +476,32 @@ if __name__ == '__main__':
         s = '''\n------ gtruth_OptiTrack_cam_poses vs. gtruth_UV_cam_poses
             "Best possible pose estimation compared to OptiTrack measured camera poses (used gtruth object centers (manually projected) for adjustment)"\n''' 
         print_cam_pos_distances(gtruth_OptiTrack_cam_poses, gtruth_UV_cam_poses, s)
+        print('Poses orientation comparison:')
+        print_cam_orientation_comparison(gtruth_OptiTrack_cam_poses, gtruth_UV_cam_poses)
 
         # gtruth_OptiTrack_cam_poses vs. detAligned_gtruth_UV_cam_poses
         s = '''\n------ gtruth_OptiTrack_cam_poses vs. detAligned_gtruth_UV_cam_poses
             "Pose estimation for object centers generated from detection-aligned gtruth"\n'''
         print_cam_pos_distances(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses, s)
-        # calculate the PIXEL DISTANCE of the object centers used for adjustment
+        print('Poses orientation comparison:')
+        print_cam_orientation_comparison(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses)
+        print('Pose differences:')
+        print_cam_orientation_diff(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses)
 
         # gtruth_UV_cam_poses vs. detAligned_gtruth_UV_cam_poses
         s = '''\n------ gtruth_UV_cam_poses vs. detAligned_gtruth_UV_cam_poses
             "Pose estimation diff between gtruth and detection-aligned gtruth object centers"\n'''
         print_cam_pos_distances(gtruth_UV_cam_poses, detAligned_gtruth_UV_cam_poses, s) 
-        # calculate the PIXEL DISTANCE of the object centers used for adjustment
 
         # gtruth_OptiTrack_cam_poses vs. det_cam_poses
         s = '''\n------ gtruth_OptiTrack_cam_poses vs. det_cam_poses
             "Pose estimation for object centers generated from object detection"\n'''
         print_cam_pos_distances(gtruth_OptiTrack_cam_poses, det_cam_poses, s)
 
-        # # det_cam_poses vs. gtruth_UV_cam_poses
-        # s = '''------ det_cam_poses vs. gtruth_UV_cam_poses\n
-        #             "Pose estimation diff between detected and gtruth object centers"'''
-        # print_cam_pos_distances(det_cam_poses, gtruth_UV_cam_poses, s)
-        # # calculate the PIXEL DISTANCE of the object centers used for adjustment
+        print('Poses orientation comparison:')
+        print_cam_orientation_comparison(gtruth_OptiTrack_cam_poses, det_cam_poses)
+        print('Pose differences:')
+        print_cam_orientation_diff(gtruth_OptiTrack_cam_poses, det_cam_poses)
 
         # det_cam_poses vs. detAligned_gtruth_UV_cam_poses 
         print('''\n------ det_cam_poses vs. detAligned_gtruth_UV_cam_poses\n
@@ -457,10 +510,38 @@ if __name__ == '__main__':
         print_cam_pos_distances(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses, s)
         s = '''(gtruth_OptiTrack_cam_poses vs. det_cam_poses)'''
         print_cam_pos_distances(gtruth_OptiTrack_cam_poses, det_cam_poses, s)
+
+        # remove image 14 & 15 due to non-unique object detection cases
+        s = '''(gtruth_OptiTrack_cam_poses vs. det_cam_poses_rm1415)'''
+        det_cam_poses_rm1415 = deepcopy(det_cam_poses)
+        det_cam_poses_rm1415[13] = detAligned_gtruth_UV_cam_poses[13]
+        det_cam_poses_rm1415[14] = detAligned_gtruth_UV_cam_poses[14]
+        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, det_cam_poses_rm1415, s)
+
         #print_cam_pos_distances(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses, s)
         # calculate the PIXEL DISTANCE of the object centers used for adjustment
         print('''(Pixel distances of centers used for adjusting det_cam_poses & detAligned_gtruth_UV_cam_poses)''')
         print_pxl_distances(det_UV_coordinates, detAligned_gtruth_UV_coordinates)
+
+        # print img10 Experiments 
+        print('''\n------ img10 vs. img_10_experiments\n
+            "Pose estimation diff between img10_det and 5 img_10_experiments"''')
+        experiments_num = 5
+
+        s = '''(img_10_det vs. img_10_experiments)'''
+        img10_det_cam_pose = det_cam_poses[9]
+        img10_det_cam_poses = [img10_det_cam_pose] * experiments_num 
+        print_cam_pos_distances(img10_det_cam_poses, img10_UV_cam_poses, s)
+
+        print('Poses orientation comparison:')
+        print_cam_orientation_comparison(img10_det_cam_poses, img10_UV_cam_poses)
+        print('Pose differences:')
+        print_cam_orientation_diff(img10_det_cam_poses, img10_UV_cam_poses)
+
+        # s = '''(img_10_ground_truth vs. img_10_experiments)'''
+        # img_10_ground_truth_pose = detAligned_gtruth_UV_cam_poses[9] 
+        # img10_ground_truth_cam_poses = [img_10_ground_truth_pose] * experiments_num 
+        # print_cam_pos_distances(img10_ground_truth_cam_poses, img10_UV_cam_poses, s)
 
     # print 'good.'
     print('''------\n

@@ -1,0 +1,14 @@
+- IMG001_IMG_001.cl
+Only left object centers without image center intersection (17 horse, 22 zebra, 23 giraffe)
+
+- IMG002_IMG_002.cl
+Lower object centers with vertically image intersection (17 horse, 20 elephant, 21 bear)
+
+- IMG003_IMG_003.cl 
+2 lower object centers and 1 vertically and horizontally image center intersecting upper object center (20 elephant, 21 bear, 22 zebra)
+
+- IMG004_IMG_004.cl
+2 vertically image center intersecting lower object centers and 1 upper object center (17 horse, 20 elephant, 23 giraffe)
+
+- IMG005_IMG_005.cl
+2 upper object centers and 1 diagonal lower object center (21 bear, 22 zebra, 23 giraffe)
