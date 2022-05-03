@@ -378,7 +378,7 @@ def print_cam_orientation_diff(cam_poses_set_one, cam_poses_set_two):
     orient_diffs = calc_cam_poses_orientation_diff(cam_poses_set_one, cam_poses_set_two)
     for i, orient_diff in enumerate(orient_diffs):
         print('IMG%02i | OMEGA: %.2f | PHI: %.2f | KAPPA: %.2f'  % \
-            (i, round(orient_diff[0], 2), round(orient_diff[1], 2), round(orient_diff[2], 2)))
+            ((i+1), round(orient_diff[0], 2), round(orient_diff[1], 2), round(orient_diff[2], 2)))
     
     return
 
@@ -389,6 +389,15 @@ def print_cam_orientation_comparison(cam_poses_set_one, cam_poses_set_two):
         print('IMG%02i | OMEGA: %.2f , %.2f | PHI: %.2f , %.2f | KAPPA: %.2f , %.2f'  % \
             ((i+1), cam_pose_one['OMEGA'], cam_pose_two['OMEGA'], cam_pose_one['PHI'], cam_pose_two['PHI'], \
                 cam_pose_one['KAPPA'], cam_pose_two['KAPPA']))
+
+
+def print_cam_pos_comparison(cam_poses_set_one, cam_poses_set_two):
+    for i, cam_pose_one in enumerate(cam_poses_set_one):
+        cam_pose_two = cam_poses_set_two[i]
+
+        print('IMG%02i | X: %.4f , %.4f | Y: %.4f , %.4f | Z: %.4f , %.4f'  % \
+            ((i+1), cam_pose_one['X'], cam_pose_two['X'], cam_pose_one['Y'], cam_pose_two['Y'], \
+                cam_pose_one['Z'], cam_pose_two['Z']))
 
 
 def print_pxl_distances(UV_coordinates_set_one, UV_coordinates_set_two):
@@ -476,17 +485,32 @@ if __name__ == '__main__':
         s = '''\n------ gtruth_OptiTrack_cam_poses vs. gtruth_UV_cam_poses
             "Best possible pose estimation compared to OptiTrack measured camera poses (used gtruth object centers (manually projected) for adjustment)"\n''' 
         print_cam_pos_distances(gtruth_OptiTrack_cam_poses, gtruth_UV_cam_poses, s)
+        print('Poses position comparison:')
+        print_cam_pos_comparison(gtruth_OptiTrack_cam_poses, gtruth_UV_cam_poses)
         print('Poses orientation comparison:')
         print_cam_orientation_comparison(gtruth_OptiTrack_cam_poses, gtruth_UV_cam_poses)
 
+        #remove pose 11+12 because of n < 3 detections
+        gtruth_OptiTrack_cam_poses_rm1112 = deepcopy(gtruth_OptiTrack_cam_poses)
+        del gtruth_OptiTrack_cam_poses_rm1112[10]
+        del gtruth_OptiTrack_cam_poses_rm1112[10]
+        detAligned_gtruth_UV_cam_poses_rm1112 = deepcopy(detAligned_gtruth_UV_cam_poses)
+        del detAligned_gtruth_UV_cam_poses_rm1112[10]
+        del detAligned_gtruth_UV_cam_poses_rm1112[10]
+        det_cam_poses_rm1112 = deepcopy(det_cam_poses)
+        del det_cam_poses_rm1112[10]
+        del det_cam_poses_rm1112[10]
+
         # gtruth_OptiTrack_cam_poses vs. detAligned_gtruth_UV_cam_poses
-        s = '''\n------ gtruth_OptiTrack_cam_poses vs. detAligned_gtruth_UV_cam_poses
+        s = '''\n------ IMG11+12 corrected: gtruth_OptiTrack_cam_poses vs. detAligned_gtruth_UV_cam_poses
             "Pose estimation for object centers generated from detection-aligned gtruth"\n'''
-        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses, s)
-        print('Poses orientation comparison:')
-        print_cam_orientation_comparison(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses)
-        print('Pose differences:')
-        print_cam_orientation_diff(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses)
+        print_cam_pos_distances(gtruth_OptiTrack_cam_poses_rm1112, detAligned_gtruth_UV_cam_poses_rm1112, s)
+        print('Poses position comparison:')
+        print_cam_pos_comparison(gtruth_OptiTrack_cam_poses_rm1112, detAligned_gtruth_UV_cam_poses_rm1112)
+        # print('Poses orientation comparison:')
+        # print_cam_orientation_comparison(gtruth_OptiTrack_cam_poses_rm1112, detAligned_gtruth_UV_cam_poses_rm1112)
+        # print('Pose differences:')
+        # print_cam_orientation_diff(gtruth_OptiTrack_cam_poses_rm1112, detAligned_gtruth_UV_cam_poses_rm1112)
 
         # gtruth_UV_cam_poses vs. detAligned_gtruth_UV_cam_poses
         s = '''\n------ gtruth_UV_cam_poses vs. detAligned_gtruth_UV_cam_poses
@@ -494,34 +518,49 @@ if __name__ == '__main__':
         print_cam_pos_distances(gtruth_UV_cam_poses, detAligned_gtruth_UV_cam_poses, s) 
 
         # gtruth_OptiTrack_cam_poses vs. det_cam_poses
-        s = '''\n------ gtruth_OptiTrack_cam_poses vs. det_cam_poses
+        s = '''\n------ IMG11+12 corrected: gtruth_OptiTrack_cam_poses vs. det_cam_poses
             "Pose estimation for object centers generated from object detection"\n'''
-        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, det_cam_poses, s)
-
+        print_cam_pos_distances(gtruth_OptiTrack_cam_poses_rm1112, det_cam_poses_rm1112, s)
+        print('Poses position comparison:')
+        print_cam_pos_comparison(gtruth_OptiTrack_cam_poses_rm1112, det_cam_poses_rm1112)
         print('Poses orientation comparison:')
-        print_cam_orientation_comparison(gtruth_OptiTrack_cam_poses, det_cam_poses)
+        print_cam_orientation_comparison(gtruth_OptiTrack_cam_poses_rm1112, det_cam_poses_rm1112)
         print('Pose differences:')
-        print_cam_orientation_diff(gtruth_OptiTrack_cam_poses, det_cam_poses)
+        print_cam_orientation_diff(gtruth_OptiTrack_cam_poses_rm1112, det_cam_poses_rm1112)
 
         # det_cam_poses vs. detAligned_gtruth_UV_cam_poses 
-        print('''\n------ det_cam_poses vs. detAligned_gtruth_UV_cam_poses\n
+        print('''\n------ IMG11+12+14+15 corrected: det_cam_poses vs. detAligned_gtruth_UV_cam_poses\n
             "Pose estimation diff between detected and detection-aligned gtruth object centers"''')
-        s = '''(gtruth_OptiTrack_cam_poses vs. detAligned_gtruth_UV_cam_poses)'''
-        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses, s)
-        s = '''(gtruth_OptiTrack_cam_poses vs. det_cam_poses)'''
-        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, det_cam_poses, s)
-
         # remove image 14 & 15 due to non-unique object detection cases
-        s = '''(gtruth_OptiTrack_cam_poses vs. det_cam_poses_rm1415)'''
-        det_cam_poses_rm1415 = deepcopy(det_cam_poses)
-        det_cam_poses_rm1415[13] = detAligned_gtruth_UV_cam_poses[13]
-        det_cam_poses_rm1415[14] = detAligned_gtruth_UV_cam_poses[14]
-        print_cam_pos_distances(gtruth_OptiTrack_cam_poses, det_cam_poses_rm1415, s)
+        det_cam_poses_rm11121415 = deepcopy(det_cam_poses_rm1112)
+        det_cam_poses_rm11121415.pop()
+        det_cam_poses_rm11121415.pop()
+        gtruth_OptiTrack_cam_poses_rm11121415 = deepcopy(gtruth_OptiTrack_cam_poses_rm1112)
+        gtruth_OptiTrack_cam_poses_rm11121415.pop()
+        gtruth_OptiTrack_cam_poses_rm11121415.pop()
+        detAligned_gtruth_UV_cam_poses_rm11121415 = deepcopy(detAligned_gtruth_UV_cam_poses_rm1112)
+        detAligned_gtruth_UV_cam_poses_rm11121415.pop()
+        detAligned_gtruth_UV_cam_poses_rm11121415.pop()
+
+        s = '''(IMG11+12+14+15 corrected: gtruth_OptiTrack_cam_poses vs. det_cam_poses)'''
+        print_cam_pos_distances(gtruth_OptiTrack_cam_poses_rm11121415, det_cam_poses_rm11121415, s)
+        s = '''(IMG11+12+14+15 corrected: gtruth_OptiTrack_cam_poses vs. detAligned_gtruth_UV_cam_poses)'''
+        print_cam_pos_distances(gtruth_OptiTrack_cam_poses_rm11121415, detAligned_gtruth_UV_cam_poses_rm11121415, s)
 
         #print_cam_pos_distances(gtruth_OptiTrack_cam_poses, detAligned_gtruth_UV_cam_poses, s)
         # calculate the PIXEL DISTANCE of the object centers used for adjustment
-        print('''(Pixel distances of centers used for adjusting det_cam_poses & detAligned_gtruth_UV_cam_poses)''')
-        print_pxl_distances(det_UV_coordinates, detAligned_gtruth_UV_coordinates)
+        det_UV_coordinates_rm11121415 = deepcopy(det_UV_coordinates)
+        del det_UV_coordinates_rm11121415[10]
+        del det_UV_coordinates_rm11121415[10]
+        det_UV_coordinates_rm11121415.pop()
+        det_UV_coordinates_rm11121415.pop()
+        detAligned_gtruth_UV_coordinates_rm11121415 = deepcopy(detAligned_gtruth_UV_coordinates)
+        del detAligned_gtruth_UV_coordinates_rm11121415[10]
+        del detAligned_gtruth_UV_coordinates_rm11121415[10]
+        detAligned_gtruth_UV_coordinates_rm11121415.pop()
+        detAligned_gtruth_UV_coordinates_rm11121415.pop()
+        print('''(IMG11+12+14+15 corrected: Pixel distances of centers used for adjusting det_cam_poses & detAligned_gtruth_UV_cam_poses)''')
+        print_pxl_distances(det_UV_coordinates_rm11121415, detAligned_gtruth_UV_coordinates_rm11121415)
 
         # print img10 Experiments 
         print('''\n------ img10 vs. img_10_experiments\n
