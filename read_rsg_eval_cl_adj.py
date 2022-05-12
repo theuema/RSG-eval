@@ -489,6 +489,9 @@ if __name__ == '__main__':
         print_cam_pos_comparison(gtruth_OptiTrack_cam_poses, gtruth_UV_cam_poses)
         print('Poses orientation comparison:')
         print_cam_orientation_comparison(gtruth_OptiTrack_cam_poses, gtruth_UV_cam_poses)
+        print('Pose differences:')
+        print_cam_orientation_diff(gtruth_OptiTrack_cam_poses, gtruth_UV_cam_poses)
+
 
         #remove pose 11+12 because of n < 3 detections
         gtruth_OptiTrack_cam_poses_rm1112 = deepcopy(gtruth_OptiTrack_cam_poses)
@@ -565,17 +568,17 @@ if __name__ == '__main__':
         # print img10 Experiments 
         print('''\n------ img10 vs. img_10_experiments\n
             "Pose estimation diff between img10_det and 5 img_10_experiments"''')
-        experiments_num = 5
+        experiments_num = 8 
 
         s = '''(img_10_det vs. img_10_experiments)'''
-        img10_det_cam_pose = det_cam_poses[9]
-        img10_det_cam_poses = [img10_det_cam_pose] * experiments_num 
-        print_cam_pos_distances(img10_det_cam_poses, img10_UV_cam_poses, s)
+        comparing_pose = gtruth_OptiTrack_cam_poses[9] #det_cam_poses
+        comparing_poses = [comparing_pose] * experiments_num 
+        print_cam_pos_distances(comparing_poses, img10_UV_cam_poses, s)
 
         print('Poses orientation comparison:')
-        print_cam_orientation_comparison(img10_det_cam_poses, img10_UV_cam_poses)
+        print_cam_orientation_comparison(comparing_poses, img10_UV_cam_poses)
         print('Pose differences:')
-        print_cam_orientation_diff(img10_det_cam_poses, img10_UV_cam_poses)
+        print_cam_orientation_diff(comparing_poses, img10_UV_cam_poses)
 
         # s = '''(img_10_ground_truth vs. img_10_experiments)'''
         # img_10_ground_truth_pose = detAligned_gtruth_UV_cam_poses[9] 

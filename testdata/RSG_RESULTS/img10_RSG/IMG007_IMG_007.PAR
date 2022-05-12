@@ -21,7 +21,7 @@
     </Attributes>
     <Attributes Set="GeneralParameters">
       <Tag id="DATE" type="string">00-   -0</Tag>
-      <Tag id="ORBIT_NAME" type="string">IMG003_IMG_003</Tag>
+      <Tag id="ORBIT_NAME" type="string">IMG007_IMG_007</Tag>
       <Tag id="EXTORB_NAME" type="string"></Tag>
       <Tag id="PROJ_NAME" type="string"></Tag>
       <Tag id="TRF_NAME" type="string"></Tag>
@@ -86,17 +86,17 @@
     <Attributes Set="AdjustedGeometry">
       <Tag id="USE_VEL_POLY" type="bool">f</Tag>
       <Tag id="NORBX" type="int">1</Tag>
-      <Tag id="ORBX" type="float">-0.802103862460369</Tag>
+      <Tag id="ORBX" type="float">-0.793512774843080</Tag>
       <Tag id="NORBY" type="int">1</Tag>
-      <Tag id="ORBY" type="float">1.404880346760732</Tag>
+      <Tag id="ORBY" type="float">1.435696279580018</Tag>
       <Tag id="NORBZ" type="int">1</Tag>
-      <Tag id="ORBZ" type="float">1.507660737347999</Tag>
+      <Tag id="ORBZ" type="float">1.570844105396233</Tag>
       <Tag id="NOMEGA" type="int">1</Tag>
-      <Tag id="OMEGA" type="float">-1.717351596324505</Tag>
+      <Tag id="OMEGA" type="float">-1.658260149845696</Tag>
       <Tag id="NPHI" type="int">1</Tag>
-      <Tag id="PHI" type="float">-0.018413153132245</Tag>
+      <Tag id="PHI" type="float">0.000175301242427</Tag>
       <Tag id="NKAPPA" type="int">1</Tag>
-      <Tag id="KAPPA" type="float">4.762990622552771</Tag>
+      <Tag id="KAPPA" type="float">4.736012562539499</Tag>
       <Tag id="SIGMA_OMEGA" type="float">1.000000000000000</Tag>
       <Tag id="SIGMA_PHI" type="float">1.000000000000000</Tag>
       <Tag id="SIGMA_KAPPA" type="float">1.000000000000000</Tag>
